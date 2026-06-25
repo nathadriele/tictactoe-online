@@ -21,7 +21,7 @@ Tela de entrada da aplicação com título "JOGO DA VELHA", subtítulo "Multipla
 ### Tela de Entrada em Sala: Campo de Código
 
 Tela de acesso com campos para nome do jogador e código da sala (formato ABC123), exibida após clicar em "Entrar em Sala" na tela inicial.
-<img width="1154" height="890" alt="2" src="https://github.com/user-attachments/assets/2dae58b9-ebf9-4c5e-bbb9-37e823197f2b" />
+<img width="972" height="804" alt="10" src="https://github.com/user-attachments/assets/0ce60843-ea62-42cc-945f-ea7e93e71bac" />
 
 ### Partida Iniciada: Tabuleiro Vazio, Vez de Adriele
 
@@ -42,6 +42,16 @@ Tela de resultado exibindo "EMPATE!" com placar atualizado (Empates: 1) e botão
 
 Tela de vitória com animação de confetti, placar atualizado (Adriele 1 × Felipe 0, Empates: 1) e tempo médio de resposta registrado para cada jogador.
 <img width="1154" height="890" alt="7" src="https://github.com/user-attachments/assets/2ecf7383-3ca3-4822-b783-a784743b54cd" />
+
+### Sala Criada: Aguardando Oponente com Código Copiado
+
+Tela de espera exibindo o código da sala (4FW2FY) em destaque, feedback visual "Copiado! ✓" após clicar no botão, spinner de carregamento e instrução para compartilhar o código com o oponente.
+<img width="977" height="769" alt="8" src="https://github.com/user-attachments/assets/9723100f-23c6-40ed-948e-c44898c23b70" />
+
+### Validação de Sala Cheia: Tentativa de Entrada Bloqueada
+
+Tela de entrada preenchida com nome "Vhagar" e código "SUTM48", exibindo o toast de erro "Sala cheia" ao tentar entrar em uma sala que já possui dois jogadores ativos.
+<img width="972" height="804" alt="9" src="https://github.com/user-attachments/assets/d11db1b3-f807-4f71-9145-1b751c9dfa1e" />
 
 ---
 
