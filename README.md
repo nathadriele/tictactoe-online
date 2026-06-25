@@ -2,11 +2,46 @@
 
 Jogo da velha multiplayer em tempo real, feito com Node.js, Express e Socket.io.
 
+https://tictactoe-online-hffd.onrender.com
+
 ## Stack
 
 - **Backend:** Node.js 18+, Express 4.x, Socket.io 4.x
 - **Frontend:** HTML5, CSS3, JavaScript vanilla (sem frameworks)
 - **Hospedagem:** Render.com (plano Free, sem cartão de crédito)
+
+## Demonstração rápida
+
+### Tela Inicial: Criar ou Entrar em Sala
+
+Tela de entrada da aplicação com título "JOGO DA VELHA", subtítulo "Multiplayer Online em Tempo Real", campo de nome e botões para criar ou entrar em uma sala existente.
+<img width="1154" height="890" alt="3" src="https://github.com/user-attachments/assets/0f6b8757-7f2b-43fd-b915-bc719a82bf2f" />
+
+
+### Tela de Entrada em Sala: Campo de Código
+
+Tela de acesso com campos para nome do jogador e código da sala (formato ABC123), exibida após clicar em "Entrar em Sala" na tela inicial.
+<img width="1154" height="890" alt="2" src="https://github.com/user-attachments/assets/2dae58b9-ebf9-4c5e-bbb9-37e823197f2b" />
+
+### Partida Iniciada: Tabuleiro Vazio, Vez de Adriele
+
+Tela de jogo com os dois jogadores conectados (Adriele X e Felipe O), cronômetro ativo no painel de Adriele e tabuleiro limpo aguardando a primeira jogada.
+<img width="1154" height="890" alt="4" src="https://github.com/user-attachments/assets/cc9e3e2e-e8dd-42a6-8dee-058d6cc683aa" />
+
+### Partida em Andamento: Tabuleiro Quase Completo
+
+Jogo com 8 das 9 células preenchidas, cronômetros e tempo médio por jogada visíveis para ambos os jogadores, uma célula restante para a jogada decisiva.
+<img width="1154" height="890" alt="5" src="https://github.com/user-attachments/assets/fc3461a7-5ceb-442f-83dc-5c2c29738a1d" />
+
+### Resultado: Empate Registrado no Placar
+
+Tela de resultado exibindo "EMPATE!" com placar atualizado (Empates: 1) e botão "Jogar Novamente" disponível para ambos os jogadores reiniciarem a partida.
+<img width="1154" height="890" alt="6" src="https://github.com/user-attachments/assets/40a5f577-93d4-4638-9125-b416c298251b" />
+
+### Vitória: Adriele Vence a Rodada
+
+Tela de vitória com animação de confetti, placar atualizado (Adriele 1 × Felipe 0, Empates: 1) e tempo médio de resposta registrado para cada jogador.
+<img width="1154" height="890" alt="7" src="https://github.com/user-attachments/assets/2ecf7383-3ca3-4822-b783-a784743b54cd" />
 
 ---
 
@@ -80,7 +115,7 @@ O primeiro acesso após hibernação pode levar **30–50 segundos** para "acord
 **Como lidar:**
 - Abra a URL no navegador e **aguarde o carregamento completo** antes de chamar o oponente.
 - A aplicação já inclui **retry automático** com Socket.io (10 tentativas com backoff).
-- Se aparecer "Conectando ao servidor...", basta aguardar — a conexão será restabelecida.
+- Se aparecer "Conectando ao servidor...", basta aguardar, a conexão será restabelecida.
 
 ---
 
@@ -120,6 +155,12 @@ tictactoe-online/
 ├── .gitignore
 └── README.md
 ```
+
+---
+
+## Jogo da Velha Multiplayer Online - Alguns testes no ambiente local
+
+<img width="575" height="919" alt="1" src="https://github.com/user-attachments/assets/d68217f8-f6c4-42db-929a-498e8c407dad" />
 
 ---
 
