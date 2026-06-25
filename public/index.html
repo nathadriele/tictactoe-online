@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Jogo da Velha Multiplayer Online</title>
+
+  <!-- Fontes Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Socket.io client -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <style>
+    /* =========================================================
+       Variáveis de cor (paleta obrigatória)
+       ========================================================= */
+    :root {
+      --bg-primary:    #0F0F1A;
+      --bg-card:       #1A1A2E;
+      --bg-cell:       #16213E;
+      --accent-x:      #E94560;
+      --accent-o:      #7B2FBE;
+      --accent-o-glow: #533483;
+      --highlight:     #E94560;
+      --gold:          #FFD700;
+      --text-primary:  #EAEAEA;
+      --text-muted:    #A0A0B0;
+      --border:        #2A2A4A;
+    }
+
+    /* =========================================================
+       Reset e base
+       ========================================================= */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      background-image:
+        radial-gradient(circle at 15% 20%, rgba(233, 69, 96, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(123, 47, 190, 0.08) 0%, transparent 40%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    /* =========================================================
+       Telas (screens)
+       ========================================================= */
+    .screen {
+      display: none;
+      width: 100%;
+      max-width: 520px;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeInUp 0.4s ease-out;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =========================================================
+       Tela de Entrada
+       ========================================================= */
+    .logo {
+      font-size: clamp(2rem, 8vw, 3rem);
+      font-weight: 900;
+      letter-spacing: 3px;
+      text-align: center;
+      color: var(--text-primary);
+      text-shadow:
+        0 0 20px rgba(233, 69, 96, 0.5),
+        0 0 40px rgba(233, 69, 96, 0.2);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 24px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-group label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    input[type="text"] {
+      background: var(--bg-cell);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent-x);
+      box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.15);
+    }
+
+    input[type="text"]::placeholder {
+      color: #555568;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex: 1;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: var(--accent-x);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 4px 20px rgba(233, 69, 96, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--bg-cell);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent-o);
+      filter: brightness(1.1);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-back {
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 12px;
+      align-self: center;
+    }
+
+    /* =========================================================
+       Rodapé — Créditos de desenvolvimento
+       ========================================================= */
+    .footer-credits {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      opacity: 0.7;
+    }
+
+    .footer-credits strong {
+      color: var(--text-primary);
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    .footer-credits .footer-year {
+      color: var(--accent-x);
+      opacity: 0.7;
+    }
+
+    /* =========================================================
+       Tela de Aguardar
+       ========================================================= */
+    .waiting-title {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+      text-align: center;
+      color: var(--text-primary);
+    }
+
+    .room-code-display {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(2.5rem, 10vw, 3.5rem);
+      font-weight: 900;
+      letter-spacing: 8px;
+      color: var(--accent-x);
+      text-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+      margin: 16px 0 24px;
+      padding: 20px 32px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      user-select: all;
+    }
+
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 24px;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent-x);
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--border);
+      border-top-color: var(--accent-x);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 32px 0 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .waiting-text {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .instruction {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 16px;
+      opacity: 0.7;
+    }
+
+    /* =========================================================
+       Tela de Jogo
+       ========================================================= */
+    #screen-game {
+      max-width: 600px;
+    }
+
+    .turn-indicator {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      text-align: center;
+      min-height: 24px;
+    }
+
+    .turn-indicator .highlight-x {
+      color: var(--accent-x);
+    }
+
+    .turn-indicator .highlight-o {
+      color: var(--accent-o);
+    }
+
+    .players-panel {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    .player-card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      position: relative;
+    }
+
+    .player-card.active-x {
+      border-color: var(--accent-x);
+      animation: pulseX 1.5s ease-in-out infinite;
+    }
+
+    .player-card.active-o {
+      border-color: var(--accent-o);
+      animation: pulseO 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulseX {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.4); }
+      50%      { box-shadow: 0 0 20px 4px rgba(233, 69, 96, 0.2); }
+    }
+
+    @keyframes pulseO {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(123, 47, 190, 0.4); }
+      50%      { box-shadow: 0 0 20px 4px rgba(123, 47, 190, 0.2); }
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .avatar-x {
+      background: var(--accent-x);
+    }
+
+    .avatar-o {
+      background: var(--accent-o);
+    }
+
+    .player-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .player-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-symbol {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .player-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .connection-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.65rem;
+    }
+
+    .connection-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .dot-online {
+      background: #4ade80;
+      box-shadow: 0 0 6px #4ade80;
+    }
+
+    .dot-offline {
+      background: #ef4444;
+      box-shadow: 0 0 6px #ef4444;
+    }
+
+    /* =========================================================
+       Tabuleiro
+       ========================================================= */
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      aspect-ratio: 1;
+    }
+
+    .cell {
+      background: var(--bg-cell);
+      border: 2px solid transparent;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+      min-height: 120px;
+      cursor: default;
+      transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .cell.clickable {
+      cursor: pointer;
+    }
+
+    .cell.clickable:hover {
+      background: #1d2945;
+      box-shadow: 0 0 15px rgba(233, 69, 96, 0.15);
+    }
+
+    .cell.clickable.turn-o:hover {
+      box-shadow: 0 0 15px rgba(123, 47, 190, 0.15);
+    }
+
+    /* X e O desenhados com CSS */
+    .mark {
+      width: 60%;
+      height: 60%;
+      animation: popIn 0.3s ease-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    .mark-x {
+      position: relative;
+    }
+
+    .mark-x::before,
+    .mark-x::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 8px;
+      background: var(--accent-x);
+      border-radius: 4px;
+      transform-origin: center;
+      box-shadow: 0 0 15px rgba(233, 69, 96, 0.6);
+    }
+
+    .mark-x::before {
+      transform: translate(-50%, -50%) rotate(45deg);
+    }
+
+    .mark-x::after {
+      transform: translate(-50%, -50%) rotate(-45deg);
+    }
+
+    .mark-o {
+      width: 60%;
+      height: 60%;
+      border: 8px solid var(--accent-o);
+      border-radius: 50%;
+      box-shadow:
+        0 0 20px rgba(123, 47, 190, 0.6),
+        inset 0 0 10px rgba(123, 47, 190, 0.3);
+    }
+
+    /* Célula vencedora */
+    .winner-cell {
+      animation: goldPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes goldPulse {
+      0%, 100% {
+        background: rgba(255, 215, 0, 0.15);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+      }
+      50% {
+        background: rgba(255, 215, 0, 0.3);
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+      }
+    }
+
+    /* =========================================================
+       Placar
+       ========================================================= */
+    .scoreboard {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 16px;
+      padding: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+    }
+
+    .scoreboard .name {
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .scoreboard .number {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .scoreboard .score-x .number {
+      color: var(--accent-x);
+    }
+
+    .scoreboard .score-o .number {
+      color: var(--accent-o);
+    }
+
+    .scoreboard .divider {
+      color: var(--text-muted);
+      font-size: 1.2rem;
+    }
+
+    .scoreboard .draws {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .scoreboard .draws .number {
+      color: var(--gold);
+      font-size: 1.1rem;
+    }
+
+    /* =========================================================
+       Overlay de Resultado
+       ========================================================= */
+    .result-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 15, 26, 0.92);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border-radius: 16px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .result-overlay.active {
+      display: flex;
+      animation: fadeInUp 0.3s ease-out;
+    }
+
+    .result-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(2rem, 8vw, 3rem);
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .result-title.win {
+      color: var(--gold);
+      text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    }
+
+    .result-title.draw {
+      color: var(--text-muted);
+    }
+
+    .result-subtitle {
+      font-size: 1rem;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+    }
+
+    /* Confetti */
+    .confetti-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      pointer-events: none;
+      border-radius: 16px;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      top: -20px;
+      animation: confettiFall linear forwards;
+    }
+
+    @keyframes confettiFall {
+      0% {
+        transform: translateY(-20px) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(500px) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .confetti-container { display: none; }
+    }
+
+    /* =========================================================
+       Overlay de Desconexão
+       ========================================================= */
+    .disconnect-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 15, 26, 0.95);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .disconnect-overlay.active {
+      display: flex;
+    }
+
+    .disconnect-overlay .spinner {
+      border-top-color: var(--accent-x);
+    }
+
+    .disconnect-message {
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      margin: 16px 0;
+      max-width: 320px;
+    }
+
+    .disconnect-timer {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* =========================================================
+       Toast
+       ========================================================= */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 20px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      z-index: 9999;
+      animation: toastIn 0.3s ease-out;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      max-width: 90vw;
+      text-align: center;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translate(-50%, 20px); }
+      to   { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    /* =========================================================
+       Responsividade Mobile
+       ========================================================= */
+    @media (max-width: 480px) {
+      body {
+        padding: 8px;
+      }
+
+      .cell {
+        min-width: 44px;
+        min-height: 44px;
+      }
+
+      .cell:hover {
+        box-shadow: none;
+        background: var(--bg-cell);
+        filter: brightness(1.15);
+      }
+
+      .winner-cell {
+        background: rgba(255, 215, 0, 0.2);
+        border-color: var(--gold);
+      }
+
+      .player-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 10px 8px;
+        gap: 6px;
+      }
+
+      .player-info {
+        align-items: center;
+      }
+
+      .player-stats {
+        align-items: center;
+      }
+
+      .avatar {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        font-size: 0.95rem;
+      }
+
+      .scoreboard {
+        font-size: 0.8rem;
+        gap: 8px;
+        padding: 10px;
+      }
+
+      .scoreboard .number {
+        font-size: 1.2rem;
+      }
+
+      .mark-x::before,
+      .mark-x::after {
+        height: 6px;
+      }
+
+      .mark-o {
+        border-width: 6px;
+      }
+    }
+
+    /* Min-height para células em telas pequenas (garante toque 44px mínimo) */
+    @media (max-width: 380px) {
+      .board {
+        gap: 5px;
+        padding: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================
+       Tela 1 — Entrada
+       ========================================================= -->
+  <div id="screen-entry" class="screen active">
+    <h1 class="logo">JOGO DA VELHA</h1>
+    <p class="subtitle">Multiplayer Online em Tempo Real</p>
+
+    <div class="card">
+      <div class="input-group">
+        <label for="input-name">Seu nome</label>
+        <input type="text" id="input-name" placeholder="Digite seu nome" maxlength="15" autocomplete="off">
+      </div>
+
+      <div id="join-code-group" class="input-group" style="display:none;">
+        <label for="input-code">Código da sala</label>
+        <input type="text" id="input-code" placeholder="ABC123" maxlength="6" autocomplete="off" style="text-transform:uppercase;">
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btn-create">Criar Sala</button>
+        <button class="btn btn-secondary" id="btn-show-join">Entrar em Sala</button>
+      </div>
+
+      <button class="btn-back" id="btn-back-join" style="display:none;">← Voltar</button>
+    </div>
+
+    <footer class="footer-credits">
+      Desenvolvido por <strong>Nathalia Adriele</strong> <span class="footer-year">- 2026</span>
+    </footer>
+  </div>
+
+  <!-- =========================================================
+       Tela 2 — Aguardando
+       ========================================================= -->
+  <div id="screen-waiting" class="screen">
+    <h2 class="waiting-title">Sala criada! Compartilhe o código:</h2>
+    <div class="room-code-display" id="room-code-display">------</div>
+    <button class="copy-btn" id="btn-copy">
+      <span id="copy-icon">📋</span>
+      <span id="copy-text">Copiar código</span>
+    </button>
+    <div class="spinner"></div>
+    <p class="waiting-text">Aguardando oponente...</p>
+    <p class="instruction">Envie este código para seu oponente entrar</p>
+    <button class="btn-back" id="btn-cancel-wait">← Voltar ao início</button>
+  </div>
+
+  <!-- =========================================================
+       Tela 3 — Jogo
+       ========================================================= -->
+  <div id="screen-game" class="screen">
+    <div class="turn-indicator" id="turn-indicator">Carregando...</div>
+
+    <div class="players-panel" id="players-panel">
+      <!-- Preenchido via JavaScript -->
+    </div>
+
+    <div class="board-container">
+      <div class="board" id="board">
+        <!-- 9 células geradas via JavaScript -->
+      </div>
+
+      <!-- Overlay de resultado -->
+      <div class="result-overlay" id="result-overlay">
+        <div class="confetti-container" id="confetti-container"></div>
+        <h2 class="result-title" id="result-title">VITÓRIA!</h2>
+        <p class="result-subtitle" id="result-subtitle"></p>
+        <button class="btn btn-primary" id="btn-play-again" style="max-width:220px;">Jogar Novamente</button>
+      </div>
+    </div>
+
+    <div class="scoreboard" id="scoreboard">
+      <!-- Preenchido via JavaScript -->
+    </div>
+
+    <button class="btn-back" id="btn-leave-game" style="margin-top:16px;">Sair da partida</button>
+  </div>
+
+  <!-- =========================================================
+       Overlay de Desconexão (fixo sobre tudo)
+       ========================================================= -->
+  <div class="disconnect-overlay" id="disconnect-overlay">
+    <div class="spinner"></div>
+    <p class="disconnect-message" id="disconnect-message">Oponente desconectado. Aguardando reconexão...</p>
+    <p class="disconnect-timer" id="disconnect-timer"></p>
+    <button class="btn btn-secondary" id="btn-back-home" style="display:none; max-width:200px; margin-top:16px;">Voltar ao início</button>
+  </div>
+
+  <!-- =========================================================
+       JavaScript
+       ========================================================= -->
+  <script>
+    // ===================================================
+    // Estado global do cliente
+    // ===================================================
+    let meuNome = '';
+    let meuIndice = -1;
+    let meuSimbolo = '';
+    let codigoSala = '';
+    let board = Array(9).fill(null);
+    let currentTurn = 0;
+    let players = [];
+    let scores = { wins: [0, 0], draws: 0 };
+    let gameActive = false;
+    let turnStartTime = null;
+
+    // Estatísticas de tempo (por jogador)
+    let moveTimes = [[], []]; // array de tempos para cada jogador
+    let lastMoveTime = [0, 0];
+
+    // Cronômetro
+    let cronometroInterval = null;
+    let tempoDecorrido = 0;
+
+    // Reconexão
+    let reconectando = false;
+    let tentativasReconexao = 0;
+    let maxTentativas = 20; // 60s / 3s
+    let reconnectInterval = null;
+
+    // Contador de revanche
+    let revancheContadorInterval = null;
+    let aguardandoRevanche = false;
+
+    // ===================================================
+    // Conexão Socket.io com retry (cold start do Render)
+    // ===================================================
+    const socket = io({
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000
+    });
+
+    socket.on('connect_error', () => {
+      mostrarToast('Conectando ao servidor... aguarde.');
+    });
+
+    socket.on('reconnect', () => {
+      mostrarToast('Reconectado!');
+      // Se estava em uma sala, tentar reconectar
+      const savedRoom = localStorage.getItem('ttt_roomCode');
+      if (savedRoom) {
+        socket.emit('reconnect_room', {
+          roomCode: savedRoom,
+          playerName: localStorage.getItem('ttt_playerName'),
+          playerIndex: parseInt(localStorage.getItem('ttt_playerIndex'))
+        });
+      }
+    });
+
+    // ===================================================
+    // Utilitários
+    // ===================================================
+    function mostrarToast(mensagem, duracao = 3000) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = mensagem;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), duracao);
+    }
+
+    function mostrarTela(idTela) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(idTela).classList.add('active');
+    }
+
+    function obterInicial(nome) {
+      return (nome || '?').trim().charAt(0).toUpperCase() || '?';
+    }
+
+    function escapeHTML(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto;
+      return div.innerHTML;
+    }
+
+    // ===================================================
+    // Referências de DOM
+    // ===================================================
+    const inputName = document.getElementById('input-name');
+    const inputCode = document.getElementById('input-code');
+    const joinCodeGroup = document.getElementById('join-code-group');
+    const btnCreate = document.getElementById('btn-create');
+    const btnShowJoin = document.getElementById('btn-show-join');
+    const btnBackJoin = document.getElementById('btn-back-join');
+    const btnCopy = document.getElementById('btn-copy');
+    const copyIcon = document.getElementById('copy-icon');
+    const copyText = document.getElementById('copy-text');
+    const btnCancelWait = document.getElementById('btn-cancel-wait');
+    const roomCodeDisplay = document.getElementById('room-code-display');
+    const boardEl = document.getElementById('board');
+    const turnIndicator = document.getElementById('turn-indicator');
+    const playersPanel = document.getElementById('players-panel');
+    const scoreboard = document.getElementById('scoreboard');
+    const resultOverlay = document.getElementById('result-overlay');
+    const resultTitle = document.getElementById('result-title');
+    const resultSubtitle = document.getElementById('result-subtitle');
+    const btnPlayAgain = document.getElementById('btn-play-again');
+    const btnLeaveGame = document.getElementById('btn-leave-game');
+    const disconnectOverlay = document.getElementById('disconnect-overlay');
+    const disconnectMessage = document.getElementById('disconnect-message');
+    const disconnectTimer = document.getElementById('disconnect-timer');
+    const btnBackHome = document.getElementById('btn-back-home');
+    const confettiContainer = document.getElementById('confetti-container');
+
+    // ===================================================
+    // Tela de Entrada — Eventos
+    // ===================================================
+    let modoEntrada = 'create'; // 'create' ou 'join'
+
+    btnShowJoin.addEventListener('click', () => {
+      modoEntrada = 'join';
+      joinCodeGroup.style.display = 'flex';
+      btnShowJoin.style.display = 'none';
+      btnCreate.textContent = 'Entrar';
+      btnBackJoin.style.display = 'inline';
+      setTimeout(() => inputCode.focus(), 100);
+    });
+
+    btnBackJoin.addEventListener('click', () => {
+      modoEntrada = 'create';
+      joinCodeGroup.style.display = 'none';
+      btnShowJoin.style.display = 'inline';
+      btnCreate.textContent = 'Criar Sala';
+      btnBackJoin.style.display = 'none';
+      inputCode.value = '';
+    });
+
+    btnCreate.addEventListener('click', () => {
+      const nome = inputName.value.trim();
+      if (!nome) {
+        mostrarToast('Digite seu nome para continuar.');
+        inputName.focus();
+        return;
+      }
+
+      meuNome = nome;
+
+      if (modoEntrada === 'create') {
+        socket.emit('create_room', { name: nome });
+      } else {
+        const codigo = inputCode.value.trim().toUpperCase();
+        if (codigo.length !== 6) {
+          mostrarToast('O código deve ter exatamente 6 caracteres.');
+          inputCode.focus();
+          return;
+        }
+        codigoSala = codigo;
+        socket.emit('join_room', { roomCode: codigo, name: nome });
+      }
+    });
+
+    // Permitir Enter nos campos
+    inputName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnCreate.click();
+    });
+    inputCode.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnCreate.click();
+    });
+
+    // ===================================================
+    // Tela de Aguardando — Eventos
+    // ===================================================
+    btnCopy.addEventListener('click', () => {
+      const codigo = roomCodeDisplay.textContent;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(codigo).then(() => {
+          copyIcon.textContent = '✅';
+          copyText.textContent = 'Copiado! ✓';
+          setTimeout(() => {
+            copyIcon.textContent = '📋';
+            copyText.textContent = 'Copiar código';
+          }, 2000);
+        }).catch(() => {
+          fallbackCopy(codigo);
+        });
+      } else {
+        fallbackCopy(codigo);
+      }
+    });
+
+    function fallbackCopy(texto) {
+      const textarea = document.createElement('textarea');
+      textarea.value = texto;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        copyIcon.textContent = '✅';
+        copyText.textContent = 'Copiado! ✓';
+        setTimeout(() => {
+          copyIcon.textContent = '📋';
+          copyText.textContent = 'Copiar código';
+        }, 2000);
+      } catch (e) {
+        mostrarToast('Não foi possível copiar. Selecione manualmente.');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    btnCancelWait.addEventListener('click', () => {
+      localStorage.removeItem('ttt_roomCode');
+      localStorage.removeItem('ttt_playerName');
+      localStorage.removeItem('ttt_playerIndex');
+      location.reload();
+    });
+
+    // ===================================================
+    // Tabuleiro — Renderização
+    // ===================================================
+    function criarTabuleiro() {
+      boardEl.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => fazerJogada(i));
+        boardEl.appendChild(cell);
+      }
+    }
+
+    function renderizarTabuleiro() {
+      const cells = boardEl.querySelectorAll('.cell');
+      const possoJogar = gameActive && currentTurn === meuIndice;
+
+      cells.forEach((cell, i) => {
+        // Limpa a célula
+        cell.innerHTML = '';
+        cell.classList.remove('clickable', 'turn-o', 'winner-cell');
+
+        // Marca X ou O
+        if (board[i] === 'X') {
+          const mark = document.createElement('div');
+          mark.className = 'mark mark-x';
+          cell.appendChild(mark);
+        } else if (board[i] === 'O') {
+          const mark = document.createElement('div');
+          mark.className = 'mark mark-o';
+          cell.appendChild(mark);
+        }
+
+        // Clicável?
+        if (possoJogar && board[i] === null) {
+          cell.classList.add('clickable');
+          if (meuSimbolo === 'O') {
+            cell.classList.add('turn-o');
+          }
+        }
+      });
+    }
+
+    function destacarVencedor(linha) {
+      if (!linha) return;
+      const cells = boardEl.querySelectorAll('.cell');
+      linha.forEach(idx => {
+        cells[idx].classList.add('winner-cell');
+      });
+    }
+
+    // ===================================================
+    // Painel de Jogadores
+    // ===================================================
+    function renderizarPainelJogadores() {
+      playersPanel.innerHTML = '';
+
+      for (let i = 0; i < 2; i++) {
+        const p = players[i];
+        if (!p) continue;
+
+        const card = document.createElement('div');
+        card.className = 'player-card';
+        if (gameActive && currentTurn === i) {
+          card.classList.add(i === 0 ? 'active-x' : 'active-o');
+        }
+
+        // Avatar
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar ' + (p.symbol === 'X' ? 'avatar-x' : 'avatar-o');
+        avatar.textContent = obterInicial(p.name);
+        card.appendChild(avatar);
+
+        // Informações
+        const info = document.createElement('div');
+        info.className = 'player-info';
+        info.innerHTML = `
+          <div class="player-name">${escapeHTML(p.name)}</div>
+          <div class="player-symbol">${p.symbol}</div>
+        `;
+
+        // Stats (cronômetro, última jogada, média)
+        const stats = document.createElement('div');
+        stats.className = 'player-stats';
+        const tempoLabel = (gameActive && currentTurn === i) ? `⏱ ${tempoDecorrido}s` : `⏱ 0s`;
+        const ultima = lastMoveTime[i] > 0 ? `Última: ${lastMoveTime[i]}s` : 'Última: -';
+        const tempos = moveTimes[i];
+        const media = tempos.length > 0
+          ? (tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(1)
+          : '0.0';
+        stats.innerHTML = `${tempoLabel} · ${ultima} · Média: ${media}s`;
+        info.appendChild(stats);
+        card.appendChild(info);
+
+        // Badge de conexão
+        const badge = document.createElement('div');
+        badge.className = 'connection-badge';
+        const dot = document.createElement('span');
+        dot.className = 'connection-dot ' + (p.connected ? 'dot-online' : 'dot-offline');
+        badge.appendChild(dot);
+        const label = document.createElement('span');
+        label.textContent = p.connected ? 'Online' : 'Offline';
+        label.style.color = p.connected ? '#4ade80' : '#ef4444';
+        badge.appendChild(label);
+        card.appendChild(badge);
+
+        playersPanel.appendChild(card);
+      }
+    }
+
+    // ===================================================
+    // Placar
+    // ===================================================
+    function renderizarPlacar() {
+      const n1 = players[0] ? players[0].name : 'Jogador 1';
+      const n2 = players[1] ? players[1].name : 'Jogador 2';
+      const w1 = scores.wins[0] || 0;
+      const w2 = scores.wins[1] || 0;
+      const d = scores.draws || 0;
+
+      scoreboard.innerHTML = `
+        <div class="score-x">
+          <div class="name">${escapeHTML(n1)} X:</div>
+          <div class="number">${w1}</div>
+        </div>
+        <div class="divider">|</div>
+        <div class="score-o">
+          <div class="number">${w2}</div>
+          <div class="name">:O ${escapeHTML(n2)}</div>
+        </div>
+        <div class="divider">|</div>
+        <div class="draws">
+          Empates: <span class="number">${d}</span>
+        </div>
+      `;
+    }
+
+    // ===================================================
+    // Indicador de Turno
+    // ===================================================
+    function renderizarIndicadorTurno() {
+      if (!gameActive) {
+        turnIndicator.textContent = '';
+        return;
+      }
+      if (currentTurn === meuIndice) {
+        turnIndicator.innerHTML = '<span class="highlight-' + meuSimbolo.toLowerCase() + '">Sua vez!</span>';
+      } else {
+        const outro = players[currentTurn];
+        const classe = currentTurn === 0 ? 'highlight-x' : 'highlight-o';
+        turnIndicator.innerHTML = `Vez de <span class="${classe}">${escapeHTML(outro ? outro.name : 'Oponente')}</span>`;
+      }
+    }
+
+    // ===================================================
+    // Renderização geral
+    // ===================================================
+    function renderizarTudo() {
+      renderizarTabuleiro();
+      renderizarPainelJogadores();
+      renderizarPlacar();
+      renderizarIndicadorTurno();
+    }
+
+    // ===================================================
+    // Cronômetro (atualiza a cada segundo)
+    // ===================================================
+    function iniciarCronometro() {
+      pararCronometro();
+      tempoDecorrido = 0;
+      if (turnStartTime && gameActive) {
+        tempoDecorrido = Math.floor((Date.now() - turnStartTime) / 1000);
+      }
+      atualizarCronometroDisplay();
+      cronometroInterval = setInterval(() => {
+        if (gameActive) {
+          tempoDecorrido++;
+          atualizarCronometroDisplay();
+        }
+      }, 1000);
+    }
+
+    function pararCronometro() {
+      if (cronometroInterval) {
+        clearInterval(cronometroInterval);
+        cronometroInterval = null;
+      }
+    }
+
+    function atualizarCronometroDisplay() {
+      // Atualiza apenas os stats dos jogadores (sem re-renderizar tudo)
+      const statsElements = playersPanel.querySelectorAll('.player-stats');
+      for (let i = 0; i < 2; i++) {
+        if (!statsElements[i]) continue;
+        const tempoLabel = (gameActive && currentTurn === i) ? `⏱ ${tempoDecorrido}s` : `⏱ 0s`;
+        const ultima = lastMoveTime[i] > 0 ? `Última: ${lastMoveTime[i]}s` : 'Última: -';
+        const tempos = moveTimes[i];
+        const media = tempos.length > 0
+          ? (tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(1)
+          : '0.0';
+        statsElements[i].innerHTML = `${tempoLabel} · ${ultima} · Média: ${media}s`;
+      }
+    }
+
+    // ===================================================
+    // Fazer Jogada
+    // ===================================================
+    function fazerJogada(posicao) {
+      if (!gameActive) return;
+      if (currentTurn !== meuIndice) return;
+      if (board[posicao] !== null) return;
+      if (!codigoSala) return;
+
+      socket.emit('make_move', {
+        roomCode: codigoSala,
+        position: posicao,
+        playerIndex: meuIndice
+      });
+    }
+
+    // ===================================================
+    // Confetti (celebração de vitória)
+    // ===================================================
+    function gerarConfetti() {
+      confettiContainer.innerHTML = '';
+      const cores = ['#E94560', '#7B2FBE', '#FFD700', '#4ade80', '#533483', '#EAEAEA'];
+      const numParticulas = 20;
+
+      for (let i = 0; i < numParticulas; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.background = cores[Math.floor(Math.random() * cores.length)];
+        p.style.animationDuration = (2 + Math.random() * 2) + 's';
+        p.style.animationDelay = (Math.random() * 0.5) + 's';
+        p.style.width = (6 + Math.random() * 8) + 'px';
+        p.style.height = (6 + Math.random() * 8) + 'px';
+        if (Math.random() > 0.5) {
+          p.style.borderRadius = '50%';
+        }
+        confettiContainer.appendChild(p);
+      }
+    }
+
+    // ===================================================
+    // Eventos do Socket.io — Recebidos do Servidor
+    // ===================================================
+
+    // Sala criada (jogador 1 = X)
+    socket.on('room_created', (data) => {
+      codigoSala = data.roomCode;
+      meuIndice = data.playerIndex;
+      meuSimbolo = data.symbol;
+
+      // Salva no localStorage para reconexão
+      localStorage.setItem('ttt_roomCode', codigoSala);
+      localStorage.setItem('ttt_playerName', meuNome);
+      localStorage.setItem('ttt_playerIndex', meuIndice);
+
+      roomCodeDisplay.textContent = codigoSala;
+      mostrarTela('screen-waiting');
+    });
+
+    // Entrou em sala existente (jogador 2 = O)
+    // O servidor envia este evento ANTES do game_start
+    socket.on('joined', (data) => {
+      codigoSala = data.roomCode;
+      meuIndice = data.playerIndex;
+      meuSimbolo = data.symbol;
+
+      // Salva no localStorage para reconexão
+      localStorage.setItem('ttt_roomCode', codigoSala);
+      localStorage.setItem('ttt_playerName', meuNome);
+      localStorage.setItem('ttt_playerIndex', meuIndice);
+    });
+
+    // Jogo iniciado (quando o segundo jogador entra)
+    socket.on('game_start', (data) => {
+      board = data.board;
+      players = data.players;
+      currentTurn = data.currentTurn;
+      scores = data.scores;
+      turnStartTime = data.turnStartTime || Date.now();
+      gameActive = true;
+
+      // Descobre meu símbolo baseado no índice
+      if (meuIndice >= 0 && players[meuIndice]) {
+        meuSimbolo = players[meuIndice].symbol;
+      }
+
+      // Resetar estatísticas de tempo
+      moveTimes = [[], []];
+      lastMoveTime = [0, 0];
+
+      criarTabuleiro();
+      renderizarTudo();
+      iniciarCronometro();
+
+      resultOverlay.classList.remove('active');
+      disconnectOverlay.classList.remove('active');
+      mostrarTela('screen-game');
+
+      // Atualiza localStorage
+      localStorage.setItem('ttt_roomCode', codigoSala);
+      localStorage.setItem('ttt_playerName', meuNome);
+      localStorage.setItem('ttt_playerIndex', meuIndice);
+    });
+
+    // Jogada feita
+    socket.on('move_made', (data) => {
+      board = data.board;
+      currentTurn = data.currentTurn;
+      turnStartTime = data.turnStartTime || Date.now();
+
+      // Atualiza tempo da última jogada
+      // data.moveTime é o tempo que o jogador anterior levou
+      const jogadorAnterior = currentTurn === 0 ? 1 : 0;
+      if (data.moveTime !== undefined && data.moveTime !== null) {
+        lastMoveTime[jogadorAnterior] = data.moveTime;
+        moveTimes[jogadorAnterior].push(data.moveTime);
+      }
+
+      renderizarTudo();
+      iniciarCronometro();
+    });
+
+    // Fim de jogo
+    socket.on('game_over', (data) => {
+      board = data.board;
+      scores = data.scores;
+      gameActive = false;
+
+      // Atualiza tempo da última jogada usando lastMoverIndex do servidor
+      if (data.moveTime !== undefined && data.moveTime !== null) {
+        const idxFinal = (data.lastMoverIndex !== undefined && data.lastMoverIndex !== null)
+          ? data.lastMoverIndex
+          : (data.winner !== null ? data.winner : (currentTurn === 0 ? 1 : 0));
+        lastMoveTime[idxFinal] = data.moveTime;
+        moveTimes[idxFinal].push(data.moveTime);
+      }
+
+      renderizarTabuleiro();
+      renderizarPainelJogadores();
+      renderizarPlacar();
+      pararCronometro();
+
+      // Destaca células vencedoras
+      if (data.winLine) {
+        destacarVencedor(data.winLine);
+      }
+
+      // Mostra overlay de resultado após breve delay (para ver a última marca)
+      setTimeout(() => {
+        if (data.winner === null) {
+          // Empate
+          resultTitle.textContent = 'EMPATE!';
+          resultTitle.className = 'result-title draw';
+          resultSubtitle.textContent = 'Ninguém venceu desta vez.';
+          confettiContainer.innerHTML = '';
+        } else if (data.winner === meuIndice) {
+          // Eu venci
+          resultTitle.textContent = 'VITÓRIA!';
+          resultTitle.className = 'result-title win';
+          resultSubtitle.textContent = 'Você venceu esta rodada!';
+          gerarConfetti();
+        } else {
+          // Oponente venceu
+          resultTitle.textContent = 'DERROTA';
+          resultTitle.className = 'result-title draw';
+          const nomeVencedor = players[data.winner] ? players[data.winner].name : 'Oponente';
+          resultSubtitle.textContent = `${nomeVencedor} venceu esta rodada!`;
+          confettiContainer.innerHTML = '';
+        }
+
+        btnPlayAgain.textContent = 'Jogar Novamente';
+        btnPlayAgain.disabled = false;
+        aguardandoRevanche = false;
+        resultOverlay.classList.add('active');
+      }, 600);
+
+      turnIndicator.textContent = '';
+    });
+
+    // Aguardando revanche (o outro jogador já votou — ainda não votei)
+    socket.on('waiting_rematch', () => {
+      // Se eu ainda não votei, informa que o oponente está esperando
+      if (!aguardandoRevanche && resultOverlay.classList.contains('active')) {
+        mostrarToast('Oponente quer jogar novamente! Clique em "Jogar Novamente".');
+        // Dá destaque visual ao botão
+        btnPlayAgain.style.animation = 'pulseX 1s ease-in-out 3';
+        setTimeout(() => { btnPlayAgain.style.animation = ''; }, 3000);
+      }
+    });
+
+    // Timeout da revanche
+    socket.on('rematch_timeout', (data) => {
+      mostrarToast(data.message || 'Tempo esgotado para revanche.');
+      // Reset botão
+      btnPlayAgain.textContent = 'Jogar Novamente';
+      btnPlayAgain.disabled = false;
+      aguardandoRevanche = false;
+      if (revancheContadorInterval) {
+        clearInterval(revancheContadorInterval);
+        revancheContadorInterval = null;
+      }
+    });
+
+    // Jogo reiniciado (revanche aceita)
+    socket.on('game_restart', (data) => {
+      board = data.board;
+      currentTurn = data.currentTurn;
+      scores = data.scores;
+      turnStartTime = data.turnStartTime || Date.now();
+      gameActive = true;
+
+      resultOverlay.classList.remove('active');
+      aguardandoRevanche = false;
+      if (revancheContadorInterval) {
+        clearInterval(revancheContadorInterval);
+        revancheContadorInterval = null;
+      }
+
+      renderizarTudo();
+      iniciarCronometro();
+      mostrarToast('Nova rodada iniciada!');
+    });
+
+    // Reconectado com sucesso
+    socket.on('reconnected', (data) => {
+      board = data.board;
+      scores = data.scores;
+      currentTurn = data.currentTurn;
+      turnStartTime = data.turnStartTime || Date.now();
+      gameActive = data.gameActive;
+      players = data.players;
+
+      if (meuIndice >= 0 && players[meuIndice]) {
+        meuSimbolo = players[meuIndice].symbol;
+      }
+
+      reconectando = false;
+      tentativasReconexao = 0;
+      disconnectOverlay.classList.remove('active');
+      btnBackHome.style.display = 'none';
+
+      if (revancheContadorInterval) {
+        clearInterval(revancheContadorInterval);
+        revancheContadorInterval = null;
+      }
+
+      criarTabuleiro();
+      renderizarTudo();
+      if (gameActive) iniciarCronometro();
+
+      mostrarTela('screen-game');
+      mostrarToast('Reconectado com sucesso!');
+    });
+
+    // Oponente reconectou
+    socket.on('opponent_reconnected', (data) => {
+      // Marca o outro jogador como conectado
+      for (let i = 0; i < players.length; i++) {
+        if (i !== meuIndice) {
+          if (players[i]) players[i].connected = true;
+        }
+      }
+      disconnectOverlay.classList.remove('active');
+      renderizarPainelJogadores();
+      mostrarToast(data.message || 'Oponente reconectado!');
+    });
+
+    // Oponente desconectou
+    socket.on('opponent_disconnected', (data) => {
+      // Marca o outro jogador como desconectado
+      for (let i = 0; i < players.length; i++) {
+        if (i !== meuIndice) {
+          if (players[i]) players[i].connected = false;
+        }
+      }
+      renderizarPainelJogadores();
+      mostrarDisconnectOverlay(data.message || 'Oponente desconectado.');
+    });
+
+    // Oponente saiu definitivamente
+    socket.on('opponent_left', (data) => {
+      disconnectOverlay.classList.add('active');
+      disconnectMessage.textContent = data.message || 'Oponente saiu da partida.';
+      disconnectTimer.textContent = '';
+      btnBackHome.style.display = 'inline';
+      if (reconnectInterval) {
+        clearInterval(reconnectInterval);
+        reconnectInterval = null;
+      }
+      pararCronometro();
+      gameActive = false;
+
+      // Limpa localStorage
+      localStorage.removeItem('ttt_roomCode');
+      localStorage.removeItem('ttt_playerName');
+      localStorage.removeItem('ttt_playerIndex');
+    });
+
+    // Erro genérico
+    socket.on('error', (data) => {
+      mostrarToast(data.message || 'Ocorreu um erro.');
+    });
+
+    // ===================================================
+    // Disconnect Overlay (tentativa de reconexão local)
+    // ===================================================
+    function mostrarDisconnectOverlay(mensagem) {
+      disconnectOverlay.classList.add('active');
+      disconnectMessage.textContent = mensagem;
+      btnBackHome.style.display = 'none';
+      tentativasReconexao = 0;
+
+      if (reconnectInterval) clearInterval(reconnectInterval);
+
+      reconnectInterval = setInterval(() => {
+        tentativasReconexao++;
+        const restante = 60 - (tentativasReconexao * 3);
+        if (restante > 0) {
+          disconnectTimer.textContent = `Tentando reconectar... ${restante}s restantes`;
+        } else {
+          disconnectTimer.textContent = 'Tempo esgotado.';
+        }
+
+        // Tenta reconexão
+        const savedRoom = localStorage.getItem('ttt_roomCode');
+        if (savedRoom && socket.connected) {
+          socket.emit('reconnect_room', {
+            roomCode: savedRoom,
+            playerName: localStorage.getItem('ttt_playerName'),
+            playerIndex: parseInt(localStorage.getItem('ttt_playerIndex'))
+          });
+        }
+
+        if (tentativasReconexao >= maxTentativas) {
+          clearInterval(reconnectInterval);
+          reconnectInterval = null;
+          btnBackHome.style.display = 'inline';
+          disconnectTimer.textContent = 'Não foi possível reconectar.';
+        }
+      }, 3000);
+    }
+
+    // ===================================================
+    // Botões do Jogo
+    // ===================================================
+    btnPlayAgain.addEventListener('click', () => {
+      if (aguardandoRevanche) return;
+      btnPlayAgain.disabled = true;
+      aguardandoRevanche = true;
+
+      socket.emit('play_again', {
+        roomCode: codigoSala,
+        playerIndex: meuIndice
+      });
+
+      // Inicia contador regressivo de 30s
+      let contador = 30;
+      btnPlayAgain.textContent = `Aguardando oponente... (${contador}s)`;
+      if (revancheContadorInterval) clearInterval(revancheContadorInterval);
+      revancheContadorInterval = setInterval(() => {
+        contador--;
+        if (contador <= 0) {
+          clearInterval(revancheContadorInterval);
+          revancheContadorInterval = null;
+          btnPlayAgain.textContent = 'Jogar Novamente';
+          btnPlayAgain.disabled = false;
+          aguardandoRevanche = false;
+        } else {
+          btnPlayAgain.textContent = `Aguardando oponente... (${contador}s)`;
+        }
+      }, 1000);
+    });
+
+    btnLeaveGame.addEventListener('click', () => {
+      if (confirm('Deseja realmente sair da partida?')) {
+        localStorage.removeItem('ttt_roomCode');
+        localStorage.removeItem('ttt_playerName');
+        localStorage.removeItem('ttt_playerIndex');
+        location.reload();
+      }
+    });
+
+    btnBackHome.addEventListener('click', () => {
+      localStorage.removeItem('ttt_roomCode');
+      localStorage.removeItem('ttt_playerName');
+      localStorage.removeItem('ttt_playerIndex');
+      location.reload();
+    });
+
+    // ===================================================
+    // Inicialização — Verifica reconexão ao carregar
+    // ===================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      criarTabuleiro();
+
+      // Verifica se há sessão salva para reconexão
+      const savedRoom = localStorage.getItem('ttt_roomCode');
+      const savedName = localStorage.getItem('ttt_playerName');
+      const savedIndex = localStorage.getItem('ttt_playerIndex');
+
+      if (savedRoom && savedName && savedIndex !== null) {
+        // Restaura estado local ANTES de reconectar para que os handlers
+        // (reconnected, game_start, etc.) funcionem corretamente
+        codigoSala = savedRoom;
+        meuNome = savedName;
+        meuIndice = parseInt(savedIndex);
+
+        // Aguarda conexão do socket para tentar reconectar
+        const tentarReconectar = () => {
+          if (socket.connected) {
+            socket.emit('reconnect_room', {
+              roomCode: savedRoom,
+              playerName: savedName,
+              playerIndex: parseInt(savedIndex)
+            });
+          } else {
+            setTimeout(tentarReconectar, 1000);
+          }
+        };
+        tentarReconectar();
+      }
+    });
+
+    // Limpa localStorage ao fechar a aba (apenas se não estiver em jogo)
+    window.addEventListener('beforeunload', () => {
+      // Mantém no localStorage para reconexão — não limpa aqui
+      // O servidor cuida do timeout de 60s
+    });
+
+  </script>
+</body>
+</html>
