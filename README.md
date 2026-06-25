@@ -4,6 +4,8 @@ Jogo da velha multiplayer em tempo real, feito com Node.js, Express e Socket.io.
 
 https://tictactoe-online-hffd.onrender.com
 
+[demo.webm](https://github.com/user-attachments/assets/3cc664b5-af0a-4a04-be68-df9c0e212a72)
+
 ## Stack
 
 - **Backend:** Node.js 18+, Express 4.x, Socket.io 4.x
