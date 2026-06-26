@@ -170,12 +170,6 @@ tictactoe-online/
 
 ---
 
-## Jogo da Velha Multiplayer Online - Alguns testes no ambiente local
-
-<img width="575" height="919" alt="1" src="https://github.com/user-attachments/assets/d68217f8-f6c4-42db-929a-498e8c407dad" />
-
----
-
 ## Recursos atuais
 
 - Salas com código único de 6 caracteres
